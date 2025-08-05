@@ -1,8 +1,94 @@
-import React, { useState } from "react";
+import { useRef, useState } from "react";
 import { Header } from "./Header";
+import { checkValidData } from "../utils/validate";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+import { auth, getFriendlyFirebaseError } from "../utils/firebase";
+import { useNavigate } from "react-router";
+import { useDispatch } from "react-redux";
+import { addUser } from "../utils/userSlice";
 
 const Login = () => {
   const [isSignInForm, setIsSignInForm] = useState(true);
+  const [errorMessage, setErrorMessage] = useState({});
+  const dispatch = useDispatch();
+
+  const navigate = useNavigate();
+
+  const name = useRef(null);
+  const email = useRef(null);
+  const password = useRef(null);
+
+  const handleButtonClick = () => {
+    // Validate the form data
+    const message = checkValidData(
+      name?.current?.value || "",
+      email.current.value,
+      password.current.value,
+      isSignInForm
+    );
+    setErrorMessage(message);
+
+    // If there are any validation errors, stop here
+    if (Object.keys(message).length > 0) return;
+
+    // Sign In/Sign Up Logic
+    if (!isSignInForm) {
+      // Sign Up
+      createUserWithEmailAndPassword(
+        auth,
+        email.current.value,
+        password.current.value
+      )
+        .then((userCredential) => {
+          const user = userCredential.user;
+          updateProfile(user, {
+            displayName: name.current.value,
+            photoURL: "https://example.com/jane-q-user/profile.jpg",
+          })
+            .then(() => {
+              const { uid, email, displayName, photoURL } = auth.currentUser;
+              dispatch(
+                addUser({
+                  uid: uid,
+                  email: email,
+                  displayName: displayName,
+                  photoURL: photoURL,
+                })
+              );
+              navigate("/browse");
+            })
+            .catch((error) => {
+              setErrorMessage({ message: error.message });
+            });
+
+          console.log(user);
+        })
+        .catch((error) => {
+          const friendlyMessage = getFriendlyFirebaseError(error.code);
+          setErrorMessage({ message: friendlyMessage });
+        });
+    } else {
+      // Sign In
+      signInWithEmailAndPassword(
+        auth,
+        email.current.value,
+        password.current.value
+      )
+        .then((userCredential) => {
+          const user = userCredential.user;
+          console.log(user);
+          navigate("/browse");
+        })
+        .catch((error) => {
+          const friendlyMessage = getFriendlyFirebaseError(error.code);
+          setErrorMessage({ message: friendlyMessage });
+        });
+    }
+  };
 
   const toggleSignInForm = () => {
     setIsSignInForm(!isSignInForm);
@@ -27,24 +113,61 @@ const Login = () => {
         <h1 className="text-3xl font-bold mb-6">
           {isSignInForm ? "Sign In" : "Sign Up"}
         </h1>
+
         {!isSignInForm && (
-          <input
-            type="text"
-            placeholder="Full Name"
-            className="w-full p-4 my-2 border border-gray-50/25 bg-zinc-800/50 rounded placeholder-gray-400"
-          />
+          <>
+            <input
+              ref={name}
+              type="text"
+              placeholder="Full Name"
+              onFocus={() => {
+                setErrorMessage((prev) => ({ ...prev, name: null }));
+              }}
+              className={`w-full p-4 my-2  bg-zinc-800/50 rounded placeholder-gray-400 border
+            ${errorMessage.name ? "border-red-500" : "border-gray-50/25"}`}
+            />
+            {errorMessage.name && (
+              <p className="text-xs text-red-500 mb-2">{errorMessage.name}</p>
+            )}
+          </>
         )}
+
         <input
+          ref={email}
           type="text"
           placeholder="Email or mobile number"
-          className="w-full p-4 my-2 border border-gray-50/25 bg-zinc-800/50 rounded placeholder-gray-400"
+          onFocus={() => {
+            setErrorMessage((prev) => ({ ...prev, email: null }));
+          }}
+          className={`w-full p-4 my-2  bg-zinc-800/50 rounded placeholder-gray-400 border
+            ${errorMessage.email ? "border-red-500" : "border-gray-50/25"}`}
         />
+        {errorMessage.email && (
+          <p className="text-xs text-red-500 mb-2">{errorMessage.email}</p>
+        )}
+
         <input
+          ref={password}
           type="password"
           placeholder="Password"
-          className="w-full p-4 my-2 border border-gray-50/25 bg-zinc-800/50 rounded placeholder-gray-400"
+          onFocus={() => {
+            setErrorMessage((prev) => ({ ...prev, password: null }));
+          }}
+          className={`w-full p-4 my-2  bg-zinc-800/50 rounded placeholder-gray-400 border
+            ${errorMessage.password ? "border-red-500" : "border-gray-50/25"}`}
         />
-        <button className="w-full bg-red-600 hover:bg-red-700 py-2 mt-6 rounded">
+        {errorMessage.password && (
+          <p className="text-xs text-red-500 mb-2">{errorMessage.password}</p>
+        )}
+
+        {errorMessage.message && (
+          <p className="text-sm text-red-500 mt-4">{errorMessage.message}</p>
+        )}
+
+        <button
+          className="w-full bg-red-600 hover:bg-red-700 py-2 mt-6 rounded"
+          onClick={handleButtonClick}
+        >
           {isSignInForm ? "Sign In" : "Sign Up"}
         </button>
 
