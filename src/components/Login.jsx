@@ -7,16 +7,14 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth, getFriendlyFirebaseError } from "../utils/firebase";
-import { useNavigate } from "react-router";
 import { useDispatch } from "react-redux";
 import { addUser } from "../utils/userSlice";
+import { BACKGROUND_IMG, DEFAULT_USER_AVATAR } from "../utils/constants";
 
 const Login = () => {
   const [isSignInForm, setIsSignInForm] = useState(true);
   const [errorMessage, setErrorMessage] = useState({});
   const dispatch = useDispatch();
-
-  const navigate = useNavigate();
 
   const name = useRef(null);
   const email = useRef(null);
@@ -47,7 +45,7 @@ const Login = () => {
           const user = userCredential.user;
           updateProfile(user, {
             displayName: name.current.value,
-            photoURL: "https://example.com/jane-q-user/profile.jpg",
+            photoURL: DEFAULT_USER_AVATAR,
           })
             .then(() => {
               const { uid, email, displayName, photoURL } = auth.currentUser;
@@ -59,13 +57,10 @@ const Login = () => {
                   photoURL: photoURL,
                 })
               );
-              navigate("/browse");
             })
             .catch((error) => {
               setErrorMessage({ message: error.message });
             });
-
-          console.log(user);
         })
         .catch((error) => {
           const friendlyMessage = getFriendlyFirebaseError(error.code);
@@ -81,7 +76,6 @@ const Login = () => {
         .then((userCredential) => {
           const user = userCredential.user;
           console.log(user);
-          navigate("/browse");
         })
         .catch((error) => {
           const friendlyMessage = getFriendlyFirebaseError(error.code);
@@ -100,7 +94,7 @@ const Login = () => {
       <div className="absolute inset-0">
         <img
           className="object-cover h-full w-full"
-          src="https://assets.nflxext.com/ffe/siteui/vlv3/258d0f77-2241-4282-b613-8354a7675d1a/web/IN-en-20250721-TRIFECTA-perspective_cadc8408-df6e-4313-a05d-daa9dcac139f_large.jpg"
+          src={BACKGROUND_IMG}
           alt="bg"
         />
         <div className="absolute inset-0 bg-black opacity-60" />

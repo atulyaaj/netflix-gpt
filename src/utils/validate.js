@@ -15,7 +15,8 @@ export const checkValidData = (name = "", email, password, isSignInForm) => {
   if (!isEmailValid)
     errors.email = "Please enter a valid email or mobile number.";
   if (!isPasswordValid)
-    errors.password = "Your password must contain between 4 and 60 characters.";
+    errors.password =
+      "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a number.";
 
   return errors;
 };
